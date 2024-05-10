@@ -61,7 +61,7 @@ class Livreur:
             self.prenom = row[2]
             self.statut_livreur = row[3]
             self.id_camion = row[4]
-            self.id_localisation = row[5]
+            self.id_localisation = row[5][1]
         else:
             raise ValueError("Aucun livreur avec cet ID trouvé dans la base de données")
         
@@ -125,7 +125,7 @@ class Camion:
             row = results.split(',')
             self.capacite = row[1]
             self.autonomie = row[2]
-            self.etat = row[3]
+            self.etat = row[3][:-2]
         else:
             raise ValueError("Aucun camion avec cet ID trouvé dans la base de données")
         

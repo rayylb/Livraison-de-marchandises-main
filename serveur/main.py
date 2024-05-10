@@ -15,11 +15,6 @@ def handle_client(client_socket):
         print("Requête reçue:", request)
         # Exécuter la fonction correspondante et récupérer les résultats
         parts = request.split(';')
-        print("Part 1:", parts[0])
-        if len(parts) != 2:
-            print("Requête invalide")
-            break
-        print("Part 2:", parts[1])
         function_name, args = parts
         args = args.split(',')
         if function_name == 'ajouter_livreur_bdd':
@@ -125,7 +120,7 @@ def update_livreur(*args):
     cursor = conn.cursor()
     cursor.execute("UPDATE camion SET capacite = ?, autonomie = ?, etat = ? WHERE id_camion = ?", (capacite, autonomie, etat, id_livreur))
     conn.commit()
-    cursor.execute("UPDATE livreur SET nom = ?, prenom = ?, id_localisation = ?, id_camion = ? WHERE id_livreur = ?", (nom, prenom, id_localisation, capacite, autonomie, etat, id_livreur))
+    cursor.execute("UPDATE livreur SET nom = ?, prenom = ?, id_localisation = ? WHERE id_livreur = ?", (nom, prenom, id_localisation, id_livreur))
     conn.commit()
     conn.close()
 
