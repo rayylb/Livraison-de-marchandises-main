@@ -222,11 +222,11 @@ root.title("Centrale de Livraison")
 
 # Bouton pour afficher les 10 dernières missions
 button_afficher_missions = tk.Button(root, text="Afficher les missions", command=afficher_dernieres_missions)
-button_afficher_missions.pack(pady=5)
+button_afficher_missions.pack(padx = 10, pady=10)
 
 # Bouton pour ajouter une mission
 button_ajouter_mission = tk.Button(root, text="Ajouter une mission", command=ouvrir_ajout_window)
-button_ajouter_mission.pack(pady=5)
+button_ajouter_mission.pack(padx=10, pady=10)
 
 # Fonction pour afficher les messages d'erreur de manière modale
 def show_modal_error(title, message):

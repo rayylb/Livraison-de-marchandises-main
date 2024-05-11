@@ -1,4 +1,6 @@
 import tkinter as tk
+import socket
+import global_var
 
 def login():
     """Fonction pour vérifier les informations de connexion."""
@@ -6,10 +8,18 @@ def login():
     password = password_entry.get()
 
     # Vérification des informations de connexion
-    if username == "1":
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('localhost', 12345))
+    request = f'connexion;{username},{password}'
+    client_socket.send(request.encode())
+    response = client_socket.recv(1024).decode()
+    client_socket.close()
+    print(response)
+    if response == "True":
         # Fermer la fenêtre de connexion
         root.destroy()
         # Ouvrir la fenêtre d'affichage
+        global_var.username = username
         import affichage
     else:
         message_label.config(text="Identifiant ou mot de passe incorrect", fg="red")
@@ -24,7 +34,7 @@ root.configure(padx=20, pady=20)
 # Création des widgets
 title_label = tk.Label(root, text="Livraison de Marchandise", font=("Arial", 20), pady=10)  # Titre principal en gros
 subtitle_label = tk.Label(root, text="Version Livreur", font=("Arial", 12))  # Sous-titre
-username_label = tk.Label(root, text="Nom d'utilisateur:")
+username_label = tk.Label(root, text="Identifiant:")
 username_entry = tk.Entry(root)
 password_label = tk.Label(root, text="Mot de passe:")
 password_entry = tk.Entry(root, show="*")  # Pour masquer le mot de passe

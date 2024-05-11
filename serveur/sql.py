@@ -10,10 +10,9 @@ conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
 cursor = conn.cursor()
 
 cursor.execute(
-    "SELECT id_message \
-     FROM mission"
+    "ALTER TABLE mission ADD COLUMN date DATE"
 )
-resultat = cursor.fetchall()
-print(int(resultat[0][0]))
+results = cursor.fetchall()
+print(results)
 conn.commit()
 conn.close()

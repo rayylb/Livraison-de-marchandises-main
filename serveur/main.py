@@ -27,12 +27,14 @@ def handle_client(client_socket):
             recuperer_missions(*args)
         elif function_name == 'existe_dans_base':
             existe_dans_base(*args)
-        elif function_name == 'update_mission':
-            update_mission(*args)
+        elif function_name == 'candidater_mission':
+            candidater_mission(*args)
         elif function_name == 'update_livreur':
             update_livreur(*args)
         elif function_name == 'inserer_mission':
             inserer_mission(*args)
+        elif function_name == 'connexion':
+            connexion(*args)
 
     client_socket.close()
 
@@ -106,12 +108,30 @@ def recuperer_missions(*args):
     # Ferme la connexion
     conn.close()
 
-def update_mission(*args):
-    id_livreur, etat, id_message = args[0], args[1], args[2]
+def candidater_mission(*args):
+    id_livreur, id_message, date = args[0], args[1], args[2]
     conn = sqlite3.connect('projet.db')
     cursor = conn.cursor()
-    cursor.execute("UPDATE mission SET id_livreur = ?, etat = ? WHERE id_message = ?", (id_livreur, etat, id_message))
-    conn.commit()
+    cursor.execute("SELECT SUM(quantite) FROM mission WHERE id_livreur = ? AND date_envoie = ?", (id_livreur, date))
+    quantite_transporte = cursor.fetchone()
+    cursor.execute("SELECT capacite FROM camion WHERE id_camion = (SELECT id_camion FROM livreur WHERE id_livreur = ?)", (id_livreur,))
+    capacite = cursor.fetchone()
+    cursor.execute("SELECT quantite FROM mission WHERE id_message = ?", (id_message,))
+    quantite_mission = cursor.fetchone()
+    if quantite_transporte[0] is None:
+        quantite_transporte = (0,)
+    if quantite_transporte[0] + quantite_mission[0] <= capacite[0]:
+        cursor.execute("UPDATE mission SET id_livreur = ? WHERE id_message = ?", (id_livreur, id_message))
+        conn.commit()
+        cursor.execute("UPDATE mission SET date_envoie = ? WHERE id_message = ?", (date, id_message))
+        conn.commit()
+        cursor.execute("UPDATE mission SET etat = ? WHERE id_message = ?", (1, id_message))
+        conn.commit()
+        result = "True"
+    else:
+        result = "False"
+    # Envoyer le résultat au client
+    client_socket.send(result.encode())
     conn.close()
 
 def update_livreur(*args):
@@ -131,6 +151,22 @@ def inserer_mission(*args):
     cursor.execute("INSERT INTO mission (etat, details, quantite, salaire, date_envoie, date_limite, id_livreur, id_localisation_depart, id_localisation_arrivee) VALUES (?,?,?,?,?,?,?,?,?)", (etat, details, quantite, salaire, date_envoie, date_limite, id_livreur, id_localisation_d, id_localisation_a))
     conn.commit()
     conn.close()
+
+def connexion(*args):
+    username, password = args[0], args[1]
+    print(username)
+    print(password)
+    conn = sqlite3.connect('projet.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM livreur WHERE id_livreur = ? AND mdp = ?", (username, password))
+    row = cursor.fetchone()
+    if row is not None:
+        conn.close()
+        result = "True"
+    else:
+        result = "False"
+    # Envoyer le résultat au client
+    client_socket.send(result.encode())
 
 while True:
     # Accepter une connexion client

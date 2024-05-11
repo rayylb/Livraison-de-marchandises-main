@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS `livreur` (
   `prenom` varchar(100) NOT NULL,
   `statut_livreur` varchar(100) NOT NULL,
   `id_camion` int(11) NOT NULL,
+  `mdp` varchar(100),
   `id_localisation` int(11) NOT NULL
 ); ''')
 

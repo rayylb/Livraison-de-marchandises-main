@@ -4,6 +4,8 @@ import sqlite3
 from class_projet import *
 from fonctions import *
 import webbrowser
+import global_var
+from tkcalendar import Calendar
 
 # Fonction pour afficher les informations du livreur et les 10 dernières missions dans une seule fenêtre
 def afficher_informations(livreur):
@@ -74,9 +76,12 @@ def afficher_details_mission(mission, fenetre_parent):
     bouton_itineraire = tk.Button(details_window, text="Itinéraire", command=lambda: ouvrir_itineraire(loc.latitude, loc.longitude))
     bouton_itineraire.grid(row=8, column=0, pady=5)
 
+    cal = Calendar(details_window, selectmode='day')
+    cal.grid(row=10, column=0, pady=5)
+
     # Bouton pour candidater à la mission
-    bouton_candidater = tk.Button(details_window, text="Candidater", command=lambda: candidater_a_mission(mission))
-    bouton_candidater.grid(row=9, column=0, pady=5)
+    bouton_candidater = tk.Button(details_window, text="Candidater", command=lambda: candidater_a_mission(mission, cal.selection_get()))
+    bouton_candidater.grid(row=11, column=0, pady=5)
 
 # Fonction pour ouvrir Google Maps avec l'itinéraire vers la mission
 def ouvrir_itineraire(latitude, longitude):
@@ -87,12 +92,12 @@ def ouvrir_itineraire(latitude, longitude):
     webbrowser.open(url)
 
 # Fonction pour permettre au livreur de candidater à la mission
-def candidater_a_mission(mission):
+def candidater_a_mission(mission,date):
     # Code pour permettre au livreur de candidater à la mission
-    if mission.etat == "Disponible":
+    if int(mission.etat) == 0:
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect(('localhost', 12345))
-        request = f'update_mission;{livreur.id}, En attente, {mission.id}'
+        request = f'candidater_mission;{livreur.id}, {mission.id}, {date}'
         client_socket.send(request.encode())
         client_socket.close()
         tk.messagebox.showinfo("Succès", "Vous avez candidaté à la mission avec succès.")
@@ -188,7 +193,8 @@ def modifier_informations(livreur, fenetre_parent, informations_livreur_label):
 # Création de la fenêtre principale
 root = tk.Tk()
 root.title("Application de livraison")
-livreur = Livreur(1)  # ID du livreur à récupérer
+global username
+livreur = Livreur(int(global_var.username))  # ID du livreur à récupérer
 camion = Camion(livreur.id_camion)
 # Création et placement des éléments dans la fenêtre
 welcome_label = tk.Label(root, text="Bienvenue livreur !", font=("Arial", 24))
