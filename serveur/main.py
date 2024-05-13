@@ -35,6 +35,8 @@ def handle_client(client_socket):
             inserer_mission(*args)
         elif function_name == 'connexion':
             connexion(*args)
+        elif function_name == "recuperer_missions_livreur":
+            recuperer_missions_livreur(*args)
 
     client_socket.close()
 
@@ -167,6 +169,18 @@ def connexion(*args):
         result = "False"
     # Envoyer le résultat au client
     client_socket.send(result.encode())
+
+def recuperer_missions_livreur(*args):
+    id  = args[0]
+    conn = sqlite3.connect('projet.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT id_message FROM mission WHERE id_livreur = ?", (id))
+    results = cursor.fetchall()
+    print("resultats : ", results)
+    # Envoyer les résultats au client
+    client_socket.send(str(results).encode())
+    # Ferme la connexion
+    conn.close()
 
 while True:
     # Accepter une connexion client

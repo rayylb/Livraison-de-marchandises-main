@@ -51,3 +51,13 @@ def recuperer_missions():
     missions = ast.literal_eval(response)
     return [Mission(*mission) for mission in missions]
     client_socket.close()
+
+def recuperer_missions_livreur(id):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('localhost', 12345))
+    request = f'recuperer_missions_livreur;{id}'
+    client_socket.send(request.encode())
+    response = client_socket.recv(1024).decode()
+    missions = ast.literal_eval(response)
+    return [Mission(*mission) for mission in missions]
+    client_socket.close()

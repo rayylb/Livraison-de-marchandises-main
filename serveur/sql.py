@@ -10,7 +10,7 @@ conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
 cursor = conn.cursor()
 
 cursor.execute(
-    "ALTER TABLE mission ADD COLUMN date DATE"
+    "SELECT * FROM mission WHERE id_livreur = 1"
 )
 results = cursor.fetchall()
 print(results)

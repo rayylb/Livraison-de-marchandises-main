@@ -1,53 +1,65 @@
 import tkinter as tk
-from tkinter import messagebox
-import connexion
-import affichage
+import socket
+import global_var
 
-class Application(tk.Tk):
-    def __init__(self):
-        super().__init__()
+def login():
+    """Fonction pour vérifier les informations de connexion."""
+    username = username_entry.get()
+    password = password_entry.get()
 
-        self.title("Application de Livraison")
-        self.geometry("600x400")
+    # Vérification des informations de connexion
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('localhost', 12345))
+    request = f'connexion;{username},{password}'
+    client_socket.send(request.encode())
+    response = client_socket.recv(1024).decode()
+    client_socket.close()
+    print(response)
+    if response == "True":
+        # Fermer la fenêtre de connexion
+        root.destroy()
+        # Ouvrir la fenêtre d'affichage
+        global_var.username = username
+        import affichage
+    else:
+        message_label.config(text="Identifiant ou mot de passe incorrect", fg="red")
 
-        self.create_widgets()
+# Création de la fenêtre principale
+root = tk.Tk()
+root.title("Livraison de Marchandise")  # Titre principal
 
-    def create_widgets(self):
-        self.welcome_label = tk.Label(self, text="Bienvenue Livreur !", font=("Arial", 24))
-        self.welcome_label.pack(pady=20)
+# Ajout de marges autour de la fenêtre principale
+root.configure(padx=20, pady=20)
 
-        self.info_frame = tk.Frame(self)
-        self.info_frame.pack(side="left", anchor="sw", padx=20, pady=20)
-        self.info_label = tk.Label(self.info_frame, text="Informations du Livreur", font=("Arial", 12))
-        self.info_label.pack()
-        self.username_label = tk.Label(self.info_frame, text="Nom d'utilisateur:")
-        self.username_label.pack()
-        self.username_entry = tk.Entry(self.info_frame)
-        self.username_entry.pack()
-        self.password_label = tk.Label(self.info_frame, text="Mot de passe:")
-        self.password_label.pack()
-        self.password_entry = tk.Entry(self.info_frame, show="*")
-        self.password_entry.pack()
-        self.login_button = tk.Button(self.info_frame, text="Se connecter", command=self.login)
-        self.login_button.pack()
-        self.message_label = tk.Label(self.info_frame, text="", fg="red")
-        self.message_label.pack()
+# Création des widgets
+title_label = tk.Label(root, text="Livraison de Marchandise", font=("Arial", 20), pady=10)  # Titre principal en gros
+subtitle_label = tk.Label(root, text="Version Livreur", font=("Arial", 12))  # Sous-titre
+username_label = tk.Label(root, text="Identifiant:")
+username_entry = tk.Entry(root)
+password_label = tk.Label(root, text="Mot de passe:")
+password_entry = tk.Entry(root, show="*")  # Pour masquer le mot de passe
+login_button = tk.Button(root, text="Se connecter", command=login)
+message_label = tk.Label(root, text="")
 
-        self.mission_frame = tk.Frame(self)
-        self.mission_frame.pack(side="right", anchor="se", padx=20, pady=20)
-        self.mission_label = tk.Label(self.mission_frame, text="Dix dernières missions :", font=("Arial", 12))
-        self.mission_label.pack()
-        self.afficher_dernieres_missions()
+# Placement des widgets dans la grille
+title_label.grid(row=0, column=0, columnspan=2, sticky="nsew")  # Centrage vertical et horizontal
+subtitle_label.grid(row=1, column=0, columnspan=2, sticky="nsew")  # Centrage vertical et horizontal
+username_label.grid(row=2, column=0, padx=5, pady=5)
+username_entry.grid(row=2, column=1, padx=5, pady=5)
+password_label.grid(row=3, column=0, padx=5, pady=5)
+password_entry.grid(row=3, column=1, padx=5, pady=5)
+login_button.grid(row=4, column=0, columnspan=2, padx=5, pady=5, sticky="nsew")  # Centrage vertical et horizontal
+message_label.grid(row=5, column=0, columnspan=2, sticky="nsew")  # Centrage vertical et horizontal
 
-    def login(self):
-        username = self.username_entry.get()
-        password = self.password_entry.get()
+# Ajout de lignes et colonnes vides pour centrer tous les éléments
+root.grid_rowconfigure(0, weight=1)
+root.grid_rowconfigure(1, weight=1)
+root.grid_rowconfigure(2, weight=1)
+root.grid_rowconfigure(3, weight=1)
+root.grid_rowconfigure(4, weight=1)
+root.grid_rowconfigure(5, weight=1)
+root.grid_columnconfigure(0, weight=1)
+root.grid_columnconfigure(1, weight=1)
 
-        if username == "1" and password == "password":
-            self.message_label.config(text="Connexion réussie", fg="green")
-        else:
-            self.message_label.config(text="Identifiant ou mot de passe incorrect", fg="red")
-
-if __name__ == "__main__":
-    app = Application()
-    app.mainloop()
+# Lancement de la boucle principale
+root.mainloop()

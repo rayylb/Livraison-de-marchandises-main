@@ -83,6 +83,39 @@ def afficher_details_mission(mission, fenetre_parent):
     bouton_candidater = tk.Button(details_window, text="Candidater", command=lambda: candidater_a_mission(mission, cal.selection_get()))
     bouton_candidater.grid(row=11, column=0, pady=5)
 
+def afficher_details_mission_reservee(mission, fenetre_parent):
+    details_window = tk.Toplevel(fenetre_parent)
+    details_window.title(f"Détails Mission {mission.id}")
+
+    # Afficher les informations de la mission
+    label_id = tk.Label(details_window, text=f"ID: {mission.id}")
+    label_id.grid(row=1, column=0, sticky="w")
+
+    label_etat = tk.Label(details_window, text=f"État: {mission.etat}")
+    label_etat.grid(row=2, column=0, sticky="w")
+
+    label_details = tk.Label(details_window, text=f"Détails: {mission.details}")
+    label_details.grid(row=3, column=0, sticky="w")
+
+    label_quantite = tk.Label(details_window, text=f"Quantité: {mission.quantite}")
+    label_quantite.grid(row=4, column=0, sticky="w")
+
+    label_salaire = tk.Label(details_window, text=f"Salaire: {mission.salaire}")
+    label_salaire.grid(row=5, column=0, sticky="w")
+
+    label_date_livraison = tk.Label(details_window, text=f"Date limite: {mission.date_envoie}")
+    label_date_livraison.grid(row=6, column=0, sticky="w")
+
+    loc = Localisation(mission.id_localisation_a)
+
+    label_id_localisation_a = tk.Label(details_window, text=f"Localisation d'arrivée: {loc.adresse}")
+    label_id_localisation_a.grid(row=7, column=0, sticky="w")
+
+    # Bouton pour ouvrir Google Maps avec l'itinéraire vers la mission
+    bouton_itineraire = tk.Button(details_window, text="Itinéraire", command=lambda: ouvrir_itineraire(loc.latitude, loc.longitude))
+    bouton_itineraire.grid(row=8, column=0, pady=5)
+
+
 # Fonction pour ouvrir Google Maps avec l'itinéraire vers la mission
 def ouvrir_itineraire(latitude, longitude):
     # Générer l'URL pour l'itinéraire vers la mission
@@ -99,8 +132,12 @@ def candidater_a_mission(mission,date):
         client_socket.connect(('localhost', 12345))
         request = f'candidater_mission;{livreur.id}, {mission.id}, {date}'
         client_socket.send(request.encode())
+        response = client_socket.recv(1024).decode()
         client_socket.close()
-        tk.messagebox.showinfo("Succès", "Vous avez candidaté à la mission avec succès.")
+        if response == "True":
+            tk.messagebox.showinfo("Succès", "Vous avez candidaté à la mission avec succès.")
+        else:
+            tk.messagebox.showerror("Erreur", "Vous n'avez pas de capacité suffisante pour réaliser la mission à la date donnée.")
     else:
         tk.messagebox.showerror("Erreur", "La mission n'est plus disponible.")
 
@@ -189,6 +226,65 @@ def modifier_informations(livreur, fenetre_parent, informations_livreur_label):
     bouton_valider = tk.Button(fenetre_modification, text="Valider", command=valider_modifications)
     bouton_valider.grid(row=6, columnspan=2, padx=5, pady=5)
 
+def afficher_mes_missions(livreur):
+    fenetre_info = tk.Toplevel()
+    fenetre_info.title("Informations Livreur et Missions")
+    missions = recuperer_missions_livreur(livreur.id)
+    
+    # Cadre pour les missions
+    cadre_missions = tk.Frame(fenetre_info)
+    cadre_missions.pack(pady=10)
+    # Créer un widget Listbox pour afficher les missions
+    listbox_missions = tk.Listbox(cadre_missions, height=10, width=50)
+    listbox_missions.pack(padx=10, pady=10)
+
+    # Ajouter les détails des missions à la Listbox
+    for mission in missions:
+        mission_details = f"Mission {mission.id}: {mission.details}"
+        listbox_missions.insert(tk.END, mission_details)  
+    listbox_missions.bind("<Double-Button-1>", lambda event: afficher_details_mission_reservee(missions[listbox_missions.curselection()[0]], fenetre_info))
+
+def choisir_jour(livreur):
+    def afficher_missions_jour():
+        date = cal.selection_get()
+        print(date)
+        missions = recuperer_missions_livreur(livreur.id)
+        for mission in missions:
+            print(mission.date_envoie[3:-1])
+            print (mission.date_envoie[3:-1] == str(date))
+        missions_jour = [mission for mission in missions if mission.date_envoie[3:-1] == str(date)]
+        fenetre_info = tk.Toplevel()
+        fenetre_info.title("Informations Livreur et Missions")
+        cadre_missions = tk.Frame(fenetre_info)
+        cadre_missions.pack(pady=10)
+        listbox_missions = tk.Listbox(cadre_missions, height=10, width=50)
+        listbox_missions.pack(padx=10, pady=10)
+        for mission in missions_jour:
+            mission_details = f"Mission {mission.id}: {mission.details}"
+            listbox_missions.insert(tk.END, mission_details)
+        listbox_missions.bind("<Double-Button-1>", lambda event: afficher_details_mission_reservee(missions_jour[listbox_missions.curselection()[0]], fenetre_info))
+        bouton_trajet = tk.Button(fenetre_info, text="Générer trajet Google Maps", command=lambda: generer_trajet_google_maps(missions))
+        bouton_trajet.pack(pady=5)
+    fenetre_info = tk.Toplevel()
+    fenetre_info.title("Choisir une date")
+    cal = Calendar(fenetre_info, selectmode='day')
+    cal.pack(pady=5)
+    bouton_valider = tk.Button(fenetre_info, text="Valider", command=afficher_missions_jour)
+    bouton_valider.pack(pady=5) 
+
+def generer_trajet_google_maps(missions):
+    url_base = "https://www.google.com/maps/dir/"
+
+    # Ajouter "Ma position" comme première étape
+    coordonnees = []
+
+    for mission in missions:
+        loc = Localisation(mission.id_localisation_a)
+        coordonnees.append(f"{loc.longitude},{loc.latitude}")
+
+    url = url_base + "/".join(coordonnees)
+    webbrowser.open_new_tab(url)
+
 
 # Création de la fenêtre principale
 root = tk.Tk()
@@ -197,12 +293,21 @@ global username
 livreur = Livreur(int(global_var.username))  # ID du livreur à récupérer
 camion = Camion(livreur.id_camion)
 # Création et placement des éléments dans la fenêtre
-welcome_label = tk.Label(root, text="Bienvenue livreur !", font=("Arial", 24))
+welcome_label = tk.Label(root, text=f"Bienvenue {livreur.prenom} !", font=("Arial", 24))
 welcome_label.pack(pady=20)
 
 # Bouton pour afficher les informations du livreur et les 10 dernières missions
-button_afficher_infos = tk.Button(root, text="Afficher Informations", command=lambda: afficher_informations(livreur))
+button_afficher_infos = tk.Button(root, text="Afficher mes Informations", command=lambda: afficher_informations(livreur))
 button_afficher_infos.pack(pady=10)
+
+button_afficher_infos = tk.Button(root, text="Afficher les missions disponibles", command=lambda: afficher_informations(livreur))
+button_afficher_infos.pack(pady=10)
+
+button_afficher_missions = tk.Button(root, text="Afficher mes Missions", command=lambda: afficher_mes_missions(livreur))
+button_afficher_missions.pack(pady=10)
+
+button_afficher_missions = tk.Button(root, text="Afficher mes missions d'un jour", command=lambda: choisir_jour(livreur))
+button_afficher_missions.pack(pady=10)
 
 # Lancement de la boucle principale
 root.mainloop()

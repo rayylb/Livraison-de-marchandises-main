@@ -204,7 +204,6 @@ class Localisation:
             raise ValueError("Aucune localisation avec cet ID trouvé dans la base de données")
     
     def get_adresse(self):
-        print(self.longitude, self.latitude)
         geopy.geocoders.options.default_ssl_context = ssl.create_default_context(cafile=certifi.where())
         geolocator = Nominatim(user_agent="projet")
         location = geolocator.reverse((self.longitude, self.latitude))
