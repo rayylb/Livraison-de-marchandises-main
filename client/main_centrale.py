@@ -10,28 +10,6 @@ from fonctions import *
 import folium
 
 
-def menu(root):
-    menubar = tk.Menu(root)
-
-    menu1 = tk.Menu(menubar, tearoff=0)
-    menu1.add_command(label="Créer", command=afficher_dernieres_missions)
-    menu1.add_command(label="Editer", command=afficher_dernieres_missions)
-    menu1.add_separator()
-    menu1.add_command(label="Quitter", command=root.quit)
-    menubar.add_cascade(label="Fichier", menu=menu1)
-
-    menu2 = tk.Menu(menubar, tearoff=0)
-    menu2.add_command(label="Couper", command=afficher_dernieres_missions)
-    menu2.add_command(label="Copier", command=afficher_dernieres_missions)
-    menu2.add_command(label="Coller", command=afficher_dernieres_missions)
-    menubar.add_cascade(label="Editer", menu=menu2)
-
-    menu3 = tk.Menu(menubar, tearoff=0)
-    menu3.add_command(label="A propos", command=afficher_dernieres_missions)
-    menubar.add_cascade(label="Aide", menu=menu3)
-    return menubar
-
-
 def valider_ajout(entry_details, entry_quantite, entry_salaire, entry_date_limite, entry_loc, ajout_window):
 
     # Fonction pour valider l'ajout de la mission
@@ -66,7 +44,6 @@ def valider_ajout(entry_details, entry_quantite, entry_salaire, entry_date_limit
     request = f'inserer_mission;{0},{details},{quantite},{salaire},{datetime.now()},{date_limite},{0}, {0}, {id_localisation}'
     print(request)
     client_socket.send(request.encode())
-    response = client_socket.recv(1024).decode()
     client_socket.close()
     ajout_window.destroy()
     messagebox.showinfo("Mission ajoutée", "La mission a été ajoutée avec succès.")
@@ -159,27 +136,23 @@ def afficher_details_mission(mission):
     label_id_localisation_a = tk.Label(details_window, text=f"Localisation d'arrivée: {loc.adresse}")
     label_id_localisation_a.grid(row=7, column=0, sticky="w")
 
-    # Créer une carte Folium
-    carte = folium.Map(location=[loc.longitude, loc.latitude], zoom_start=15)
-
-    # Ajouter un marqueur à l'emplacement de la localisation d'arrivée
-    folium.Marker(location=[loc.longitude, loc.latitude], popup=mission.id_localisation_a).add_to(carte)
-
-    # Convertir la carte en PNG et gérer les erreurs
-    try:
-        carte_png = carte.to_png()
-    except Exception as e:
-        print(f"Erreur lors de la conversion de la carte en PNG : {e}")
-        return  # Quitter la fonction en cas d'erreur
-
-    # Afficher la carte dans un Canvas
-    canvas = Canvas(details_window, width=500, height=400)
-    image = PhotoImage(data=carte_png)
-    canvas.create_image(0, 0, image=image, anchor="nw")
-    canvas.grid(row=8, column=0)
+    # Bouton pour supprimer la mission
+    button_supprimer = tk.Button(details_window, text="Supprimer", command=lambda: supprimer_mission(mission.id, details_window))
+    button_supprimer.grid(row=8, column=0, pady=10)
 
     # Affichez la fenêtre
     details_window.mainloop()
+
+def supprimer_mission(id, details_window):
+    # Fonction pour supprimer une mission
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('localhost', 12345))
+    request = f'supprimer_mission;{id}'
+    client_socket.send(request.encode())
+    client_socket.close()
+    details_window.destroy()
+    messagebox.showinfo("Mission supprimée", "La mission a été supprimée avec succès.")
+
 
 
 # Fonction pour ouvrir la fenêtre d'ajout de mission
@@ -242,7 +215,6 @@ def show_error(title, message):
 
 
 messagebox.showerror = show_error
-root.config(menu=menu(root))
 
 # Lancer la boucle principale Tkinter
 root.mainloop()

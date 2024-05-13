@@ -1,6 +1,9 @@
 import socket
 import sqlite3
 import threading
+import os
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
 
 
 # Créer un socket serveur
@@ -37,11 +40,13 @@ def handle_client(client_socket):
             connexion(*args)
         elif function_name == "recuperer_missions_livreur":
             recuperer_missions_livreur(*args)
+        elif function_name == 'supprimer_mission':
+            supprimer_mission(*args)
 
     client_socket.close()
 
 def existe_dans_base(*args):
-    conn = sqlite3.connect('projet.db')
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
     cursor = conn.cursor()
     print(args)
     cursor.execute(args[0])
@@ -52,7 +57,7 @@ def existe_dans_base(*args):
 
 def ajouter_livreur_bdd(*args):
     nom, prenom, statut_livreur, capacite, autonomie, etat, id_localisation = args[0], args[1], args[2], args[3], args[4], args[5], args[6]
-    conn = sqlite3.connect('projet.db')
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
     cursor = conn.cursor()
     # Requête SQL pour insérer un livreur dans la table Livreur
     cursor.execute("INSERT INTO camion (capacite, autonomie, etat) VALUES (?,?,?)", (capacite, autonomie, etat))
@@ -66,7 +71,7 @@ def ajouter_livreur_bdd(*args):
 
 def get_id_localisation(*args):
     longi, lattitude = args[0], args[1]
-    conn = sqlite3.connect('projet.db')
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
     cursor = conn.cursor()
     cursor.execute("SELECT id_localisation FROM localisation WHERE longitude = ? AND latitude = ?", (float(longi), float(lattitude)))
     row = cursor.fetchone()
@@ -83,7 +88,7 @@ def get_id_localisation(*args):
 
 def afficher_colonnes_table(*args):
     nom_table = args[0]
-    conn = sqlite3.connect('projet.db')
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
     cursor = conn.cursor()
 
     # Exécute la requête pour récupérer les informations sur la table
@@ -101,7 +106,7 @@ def afficher_colonnes_table(*args):
     conn.close()
 
 def recuperer_missions(*args):
-    conn = sqlite3.connect('projet.db')
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
     cursor = conn.cursor()
     cursor.execute("SELECT id_message FROM mission")
     results = cursor.fetchall()
@@ -112,7 +117,7 @@ def recuperer_missions(*args):
 
 def candidater_mission(*args):
     id_livreur, id_message, date = args[0], args[1], args[2]
-    conn = sqlite3.connect('projet.db')
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
     cursor = conn.cursor()
     cursor.execute("SELECT SUM(quantite) FROM mission WHERE id_livreur = ? AND date_envoie = ?", (id_livreur, date))
     quantite_transporte = cursor.fetchone()
@@ -138,7 +143,7 @@ def candidater_mission(*args):
 
 def update_livreur(*args):
     nom, prenom, id_localisation, capacite, autonomie, etat, id_livreur = args[0], args[1], args[2], args[3], args[4], args[5], args[6]
-    conn = sqlite3.connect('projet.db')
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
     cursor = conn.cursor()
     cursor.execute("UPDATE camion SET capacite = ?, autonomie = ?, etat = ? WHERE id_camion = ?", (capacite, autonomie, etat, id_livreur))
     conn.commit()
@@ -148,7 +153,7 @@ def update_livreur(*args):
 
 def inserer_mission(*args):
     etat, details, quantite, salaire, date_envoie, date_limite, id_livreur, id_localisation_d, id_localisation_a = args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]
-    conn = sqlite3.connect('projet.db')
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
     cursor = conn.cursor()
     cursor.execute("INSERT INTO mission (etat, details, quantite, salaire, date_envoie, date_limite, id_livreur, id_localisation_depart, id_localisation_arrivee) VALUES (?,?,?,?,?,?,?,?,?)", (etat, details, quantite, salaire, date_envoie, date_limite, id_livreur, id_localisation_d, id_localisation_a))
     conn.commit()
@@ -158,7 +163,7 @@ def connexion(*args):
     username, password = args[0], args[1]
     print(username)
     print(password)
-    conn = sqlite3.connect('projet.db')
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM livreur WHERE id_livreur = ? AND mdp = ?", (username, password))
     row = cursor.fetchone()
@@ -172,7 +177,7 @@ def connexion(*args):
 
 def recuperer_missions_livreur(*args):
     id  = args[0]
-    conn = sqlite3.connect('projet.db')
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
     cursor = conn.cursor()
     cursor.execute("SELECT id_message FROM mission WHERE id_livreur = ?", (id))
     results = cursor.fetchall()
@@ -180,6 +185,14 @@ def recuperer_missions_livreur(*args):
     # Envoyer les résultats au client
     client_socket.send(str(results).encode())
     # Ferme la connexion
+    conn.close()
+
+def supprimer_mission(*args):
+    id = args[0]
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM mission WHERE id_message = ?", (id,))
+    conn.commit()
     conn.close()
 
 while True:
