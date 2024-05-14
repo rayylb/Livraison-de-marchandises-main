@@ -153,7 +153,36 @@ def supprimer_mission(id, details_window):
     details_window.destroy()
     messagebox.showinfo("Mission supprimée", "La mission a été supprimée avec succès.")
 
+def recuperer_livreurs():
+    # Fonction pour récupérer la liste des livreurs depuis la base de données
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('localhost', 12345))
+    request = 'recuperer_livreurs;'
+    client_socket.send(request.encode())
+    results = client_socket.recv(1024).decode()[1:-1]
+    print(results)
+    client_socket.close()
 
+    # Créer une liste de livreurs à partir des résultats
+    livreurs = []
+    nombres = []
+
+    # Parcours de la chaîne de caractères
+    nombre_actuel = ''
+    for caractere in results:
+        if caractere.isdigit():  # Vérifie si le caractère est un chiffre
+            nombre_actuel += caractere
+        elif nombre_actuel:  # Si nous avons accumulé un nombre
+            nombres.append(nombre_actuel)
+            nombre_actuel = ''
+
+    for id in nombres:
+        if id:
+            print(id)
+            livreur = Livreur(id)
+            livreurs.append(livreur)
+
+    return livreurs
 
 # Fonction pour ouvrir la fenêtre d'ajout de mission
 def ouvrir_ajout_window():
@@ -189,6 +218,125 @@ def ouvrir_ajout_window():
     button_valider = tk.Button(ajout_window, text="Valider", command=lambda: valider_ajout(entry_details, entry_quantite, entry_salaire, entry_date_limite, entry_loc, ajout_window))
     button_valider.pack()
 
+def ajouter_livreur():
+    ajout_livreur_window = tk.Toplevel()
+    ajout_livreur_window.title("Ajouter Livreur")
+
+    # Widgets pour le formulaire
+    label_nom = tk.Label(ajout_livreur_window, text="Nom:")
+    label_nom.pack()
+    entry_nom = tk.Entry(ajout_livreur_window)
+    entry_nom.pack()
+
+    label_prenom = tk.Label(ajout_livreur_window, text="Prénom:")
+    label_prenom.pack()
+    entry_prenom = tk.Entry(ajout_livreur_window)
+    entry_prenom.pack()
+
+    label_adresse = tk.Label(ajout_livreur_window, text="Adresse:")
+    label_adresse.pack()
+    entry_adresse = tk.Entry(ajout_livreur_window)
+    entry_adresse.pack()
+
+    label_capacite_camion = tk.Label(ajout_livreur_window, text="Capacité du camion:")
+    label_capacite_camion.pack()
+    entry_capacite_camion = tk.Entry(ajout_livreur_window)
+    entry_capacite_camion.pack()
+
+    label_autonomie_camion = tk.Label(ajout_livreur_window, text="Autonomie du camion:")
+    label_autonomie_camion.pack()
+    entry_autonomie_camion = tk.Entry(ajout_livreur_window)
+    entry_autonomie_camion.pack()
+
+    label_etat_camion = tk.Label(ajout_livreur_window, text="État du camion:")
+    label_etat_camion.pack()
+    entry_etat_camion = tk.Entry(ajout_livreur_window)
+    entry_etat_camion.pack()
+
+    label_mdp = tk.Label(ajout_livreur_window, text="Mot de passe:")
+    label_mdp.pack()
+    entry_mdp = tk.Entry(ajout_livreur_window)
+    entry_mdp.pack()
+
+    button_valider = tk.Button(ajout_livreur_window, text="Valider", command=lambda: valider_ajout_livreur(entry_nom, entry_prenom, entry_adresse, entry_capacite_camion, entry_autonomie_camion, entry_etat_camion, entry_mdp, ajout_livreur_window))
+    button_valider.pack()
+
+def valider_ajout_livreur(entry_nom, entry_prenom, entry_adresse, entry_capacite_camion, entry_autonomie_camion, entry_etat_camion, mdp, ajout_livreur_window):
+    # Fonction pour valider l'ajout du livreur
+    nom = entry_nom.get()
+    prenom = entry_prenom.get()
+    adresse = entry_adresse.get()
+    capacite_camion_str = entry_capacite_camion.get()
+    autonomie_camion_str = entry_autonomie_camion.get()
+    etat_camion = entry_etat_camion.get()
+    mdp = mdp.get()
+
+    # Vérifier les entrées et afficher une boîte de dialogue en cas d'erreur
+    if not nom or not prenom or not adresse or not capacite_camion_str or not autonomie_camion_str or not etat_camion or not mdp:
+        messagebox.showwarning("Erreur", "Veuillez remplir tous les champs.")
+        return
+    
+        #convertir l'adresse en coordonnées
+    longitude, latitude = coordonnees_from_adresse(adresse)
+
+    #ajout de la localisation à la base de donnéees et get de son id
+    id_localisation = get_id_localisation(longitude, latitude)
+
+    # Ajouter le livreur à la liste de livreurs dans la base de données
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('localhost', 12345))
+    request = f'inserer_livreur;{nom},{prenom},{id_localisation},{capacite_camion_str},{autonomie_camion_str},{etat_camion},{mdp}'
+    client_socket.send(request.encode())
+    rep = client_socket.recv(1024).decode()
+    client_socket.close()
+    ajout_livreur_window.destroy()
+    messagebox.showinfo(f'Livreur ajouté', f'Le livreur a été ajouté avec succès. {rep}')
+
+def afficher_livreurs():
+    livreurs = recuperer_livreurs()
+    afficher_livreurs_window = tk.Toplevel()
+    afficher_livreurs_window.title("Livreurs")
+
+    # Créer un widget Listbox pour afficher les livreurs
+    listbox_livreurs = tk.Listbox(afficher_livreurs_window, height=10, width=50)
+    listbox_livreurs.pack(padx=10, pady=10)
+
+    # Ajouter les détails des livreurs à la Listbox
+    for livreur in livreurs:
+        livreur_details = f"Livreur {livreur.id}: {livreur.nom} {livreur.prenom}"
+        listbox_livreurs.insert(tk.END, livreur_details)
+
+    # Lier le double-clic sur un livreur à l'affichage de ses détails
+    listbox_livreurs.bind("<Double-Button-1>", lambda event: afficher_details_livreur(livreurs[listbox_livreurs.curselection()[0]]))
+
+def afficher_details_livreur(livreur):
+    details_window = tk.Toplevel()
+    details_window.title(f"Détails Livreur {livreur.id}")
+
+    # Afficher les informations du livreur
+    label_id = tk.Label(details_window, text=f"ID: {livreur.id}")
+    label_id.grid(row=1, column=0, sticky="w")
+
+    label_nom = tk.Label(details_window, text=f"Nom: {livreur.nom}")
+    label_nom.grid(row=2, column=0, sticky="w")
+
+    label_prenom = tk.Label(details_window, text=f"Prénom: {livreur.prenom}")
+    label_prenom.grid(row=3, column=0, sticky="w")
+
+    label_adresse = tk.Label(details_window, text=f"Adresse: {Localisation(livreur.id_localisation).adresse}")
+    label_adresse.grid(row=4, column=0, sticky="w")
+
+    c = Camion(livreur.id_camion)
+    label_capacite_camion = tk.Label(details_window, text=f"Capacité du camion: {c.capacite}")
+    label_capacite_camion.grid(row=5, column=0, sticky="w")
+
+    label_autonomie_camion = tk.Label(details_window, text=f"Autonomie du camion: {c.autonomie}")
+    label_autonomie_camion.grid(row=6, column=0, sticky="w")
+
+    label_etat_camion = tk.Label(details_window, text=f"État du camion: {c.etat}")
+    label_etat_camion.grid(row=7, column=0, sticky="w")
+
+
 # Créer une fenêtre principale
 root = tk.Tk()
 root.title("Centrale de Livraison")
@@ -200,6 +348,12 @@ button_afficher_missions.pack(padx = 10, pady=10)
 # Bouton pour ajouter une mission
 button_ajouter_mission = tk.Button(root, text="Ajouter une mission", command=ouvrir_ajout_window)
 button_ajouter_mission.pack(padx=10, pady=10)
+
+button_afficher_livreurs = tk.Button(root, text="Afficher les livreurs", command=afficher_livreurs)
+button_afficher_livreurs.pack(padx=10, pady=10)
+
+button_ajouter_livreur = tk.Button(root, text="Ajouter un livreur", command=ajouter_livreur)
+button_ajouter_livreur.pack(padx=10, pady=10)
 
 # Fonction pour afficher les messages d'erreur de manière modale
 def show_modal_error(title, message):

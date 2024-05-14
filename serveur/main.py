@@ -42,8 +42,21 @@ def handle_client(client_socket):
             recuperer_missions_livreur(*args)
         elif function_name == 'supprimer_mission':
             supprimer_mission(*args)
+        elif function_name == 'inserer_livreur':
+            inserer_livreur(*args)
+        elif function_name == 'recuperer_livreurs':
+            recuperer_livreurs(*args)
 
     client_socket.close()
+
+def recuperer_livreurs(*args):
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
+    cursor = conn.cursor()
+    cursor.execute("SELECT id_livreur FROM livreur")
+    results = cursor.fetchall()
+    # Envoyer les résultats au client
+    client_socket.send(str(results).encode())
+    conn.close()
 
 def existe_dans_base(*args):
     conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
@@ -193,6 +206,22 @@ def supprimer_mission(*args):
     cursor = conn.cursor()
     cursor.execute("DELETE FROM mission WHERE id_message = ?", (id,))
     conn.commit()
+    conn.close()
+
+def inserer_livreur(*args):
+    nom, prenom, id_localisation, capacite, autonomie, etat, mdp = args[0], args[1], args[2], args[3], args[4], args[5], args[6]
+    conn = sqlite3.connect(os.path.join(dir_path, 'projet.db'))
+    cursor = conn.cursor()
+    # Requête SQL pour insérer un livreur dans la table Livreur
+    cursor.execute("INSERT INTO camion (capacite, autonomie, etat) VALUES (?,?,?)", (capacite, autonomie, etat))
+    conn.commit()
+    print("Camion ajouté à la base de données")
+    id_camion = cursor.lastrowid
+    cursor.execute("INSERT INTO livreur (nom, prenom, statut_livreur, id_camion, id_localisation, mdp) VALUES (?,?,?,?,?,?)", (nom, prenom, True, id_camion, id_localisation, mdp))
+    conn.commit()
+    print("Livreur ajouté à la base de données")
+    response = f"Id du livreur : {cursor.lastrowid}, Mot de passe : {mdp}"
+    client_socket.send(response.encode())
     conn.close()
 
 while True:
